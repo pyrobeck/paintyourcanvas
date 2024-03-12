@@ -32,17 +32,19 @@ io.on('connection', (socket) => {
     console.log('user is player 2');
   });
 
-  //looking for drawing actions from the user
+  // //looking for drawing actions from the user
   socket.on('draw', (data) => {
     //emit shows the drawing to everyone
     socket.broadcast.emit('draw', data);
   });
+
+
   
   // broadcast to all player 1
-  io.to('player1').emit('message', 'you will draw in red.  Get as much as you can in 10 seconds!');
+  io.to('player1').emit('message', 'you will draw in red.  Get as much as you can in 1 minute!');
 
   // broadcast to all player 2
-  io.to('player2').emit('message', 'you will draw in blue.  Get as much as you can in 10 seconds!');
+  io.to('player2').emit('message', 'you will draw in blue.  Get as much as you can in 1 minute!');
 
 
   // leave the room

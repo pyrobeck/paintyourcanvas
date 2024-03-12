@@ -59,34 +59,52 @@
         //colour:
         ctx.strokeStyle = 'red';
 
-        const socket = io();
+        const socket = io('http://localhost:1111');
 
+        
 
         // Emit drawing data to the server
         function emitDraw(x, y, type) {
+          console.log("emitting the drawing");
           socket.emit('draw', { x, y, type });
         }
 
         // Draw line based on data from server
+
+        // socket.on('draw', (data) => {
+        //   console.log("Received draw event on client", data);
+        //   // Respond to the server as a test
+        //   socket.emit('testResponse', { msg: "Client received draw event." });
+        //   socket.broadcast.emit('draw', data);
+        // });
         socket.on('draw', (data) => {
-            const { x, y, type } = data;
-            if (type === 'start') {
-              ctx.beginPath();
-              ctx.moveTo(x, y);
-            } else if (type === 'continue') {
-              ctx.lineTo(x, y);
-              ctx.stroke();
-            }
+          console.log("drawing to the server");
+          const { x, y, type } = data;
+          if (type === 'start') {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+          } else if (type === 'continue') {
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
         });
 
         canvas.addEventListener('mousedown', (e) => {
-          console.log("should be drawing")
+          console.log("should be drawing");
           drawing = true;
+          // Start drawing on the client's canvas
+          ctx.beginPath();
+          ctx.moveTo(e.offsetX, e.offsetY);
+          // Emit drawing start action
           emitDraw(e.offsetX, e.offsetY, 'start');
         });
 
         canvas.addEventListener('mousemove', (e) => {
           if (!drawing) return;
+          // Continue drawing on the client's canvas
+          ctx.lineTo(e.offsetX, e.offsetY);
+          ctx.stroke();
+          // Emit drawing continue action
           emitDraw(e.offsetX, e.offsetY, 'continue');
         });
 
@@ -129,7 +147,7 @@
     </script> -->
 
     <script>
-      const socket = io();
+      const socket = io('http://localhost:1111');
 
       //function for joining player 1
       function pickPlayer1(player1) {
