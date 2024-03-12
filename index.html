@@ -34,7 +34,7 @@
 
     <!-- music and sound effects -->
     <audio id="gameOverSound">
-      <source src="/assets/gameoverarcade6435.mp3" type="audio/mp3">
+      <source src="public/assets/gameoverarcade6435.mp3" type="audio/mp3">
     </audio>
 
     <canvas id="drawingCanvas" width="800" height="600" style="border:1px solid black;"></canvas>
@@ -147,6 +147,14 @@
     <script>
       function startingCountdown() {
         console.log("we are in the countdown");
+
+        //get the canvas 
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
         const countdownAmount = 10 * 1; //1 minute
         const displayed = document.querySelector('#countdown');
         let timer = countdownAmount, minutes, seconds;
