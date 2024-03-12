@@ -51,7 +51,7 @@
         let drawing = false;
         let drawColour = "black"; //default colour when they start (doesnt count for anything)
         
-        const socket = io('http://localhost:1111');
+        const socket = io();
 
         document.getElementById('player1Button').addEventListener('click', function() {
           drawColour = [255, 0, 0, 255];
