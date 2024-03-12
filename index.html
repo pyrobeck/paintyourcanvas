@@ -3,53 +3,176 @@
     <head>
       <title>Draw as much as you can!</title>
       <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <!-- <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> -->
+
+      <!-- adding in socket.io so that we can have multiple players -->
+      <script src="/socket.io/socket.io.js"></script>
       <style>
-        body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  
-        #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-        #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-        #input:focus { outline: none; }
-        #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-  
-        #messages { list-style-type: none; margin: 0; padding: 0; }
-        #messages > li { padding: 0.5rem 1rem; }
-        #messages > li:nth-child(odd) { background: #efefef; }
+        #countdown {
+          font-size: 20px;
+          font-weight: bold;
+        }
+
+        .outsideButton {
+          display: flex; 
+          justify-content: center; 
+          align-items: center; 
+          height: 100%; 
+        }
+
+        #startGameButton {
+          position: relative;
+          width: 300px;
+          height: 50px;
+          font-size: 40px;
+          align-items: center;
+        }
       </style>
 
 
     </head>
     <body>
-      <ul id="messages"></ul>
+      <!-- <div id="aframe-stuff" style="width: 100%; height: 400px;"> -->
+        <!-- <a-scene>
+           * fixed camera position * -->
+          <!-- <a-camera position="0 0 5" rotation="0 0 0"></a-camera> -->
+          <!-- <a-camera>
+            <a-cursor></a-cursor>
+          </a-camera> -->
+  
+          <!-- the start game button -->
+          <!-- <a-plane id="startGameButton" position="0 1 -3" rotation="0 0 0" width="1" height="0.5" color="#4CC3D9"></a-plane> -->
+          <!-- <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9" id="start-button">
+            <a-text value="Button" position="0 0 0.55"></a-text>  align="center" 
+          </a-box> 
+        
+        </a-scene> -->
+      <!-- </div> -->
+
+    <canvas id="drawingCanvas" width="800" height="600" style="border:1px solid black;"></canvas>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        //colour:
+        ctx.strokeStyle = 'red';
+
+        const socket = io();
+
+
+        // Emit drawing data to the server
+        function emitDraw(x, y, type) {
+          socket.emit('draw', { x, y, type });
+        }
+
+        // Draw line based on data from server
+        socket.on('draw', (data) => {
+            const { x, y, type } = data;
+            if (type === 'start') {
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+            } else if (type === 'continue') {
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+          console.log("should be drawing")
+          drawing = true;
+          emitDraw(e.offsetX, e.offsetY, 'start');
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+          if (!drawing) return;
+          emitDraw(e.offsetX, e.offsetY, 'continue');
+        });
+
+        canvas.addEventListener('mouseup', () => {
+          drawing = false;
+        });
+
+        canvas.addEventListener('mouseout', () => {
+          drawing = false;
+        });
+      });
+    </script>
+      
+      
+      <!-- <script>
+        //start game button javascript
+        // document.querySelector('#button').addEventListener('click', function () {
+        //   // <button onclick="startingCountdown(countdownAmount, displayed)">Start Game!</button>
+        //   startingCountdown(countdownAmount, displayed);
+        // });
+      </script> -->
+      <!-- <ul id="messages"></ul>
     <form id="form" action="">
       <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
+    </form> -->
       
-      
-    <!-- adding in socket.io so that we can have multiple players -->
-    <script src="/socket.io/socket.io.js"></script>
+    <button onclick="pickPlayer1()" position="0 0 0">Player 1</button>
+    <button onclick="pickPlayer2()" position="5 5 5">Player 2</button>
+
+    <!-- <script>
+      function pickPlayer1() {
+        const player1 = document.getElementById('player1').value;
+        pickPlayer1(player1);
+      }
+
+      function pickPlayer2() {
+        const player2 = document.getElementById('player2').value;
+        pickPlayer2(player2);
+      }
+    </script> -->
+
     <script>
       const socket = io();
 
-      const form = document.getElementById('form');
-      const input = document.getElementById('input');
-      const messages = document.getElementById('messages');
+      //function for joining player 1
+      function pickPlayer1(player1) {
+        socket.emit('pickPlayer1', player1);
+      }
 
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (input.value) {
-          socket.emit('chat message', input.value);
-          input.value = '';
-        }
-      });
-
-      socket.on('chat message', (msg) => {
-        const item = document.createElement('li');
-        item.textContent = msg;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
-      });
+      //function for joining player 2
+      function pickPlayer2(player2) {
+        socket.emit('pickPlayer2', player2);
+      }
       
     </script>
-      
+
+    <div id="countdown" class="outsideButton"></div>
+    <script>
+      // Timer stuff
+      function startingCountdown() {
+        console.log("we are in the countdown");
+        const countdownAmount = 60 * 1; //1 minute
+        const displayed = document.querySelector('#countdown');
+        let timer = countdownAmount, minutes, seconds;
+
+        const interval = setInterval(function () {
+          minutes = parseInt(timer / 60, 10);
+          seconds = parseInt(timer % 60, 10);
+
+          minutes = minutes < 10 ? "0" + minutes : minutes;
+          seconds = seconds < 10 ? "0" + seconds : seconds;
+
+          displayed.textContent = minutes + ":" + seconds;
+
+          if (--timer < 0) {
+            clearInterval(interval);
+
+            //STOP THE GAME AND GIVE THE PERCENTAGE OF THE SCREEN COVERED
+          }
+        }, 1000);
+      }
+
+    </script>
+    <div class="outsideButton">
+      <button id="startGameButton" onclick="startingCountdown()">Start Game!</button>
+    </div>
+    
     </body>
 </html>

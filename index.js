@@ -12,24 +12,46 @@ app.get('/', (req, res) => {
 });
 
 
-//emit shows it to everyone
-io.on('connection', (socket) => {
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
-  });
-});
-
 //letting the player choose which player they want to be (colour)
 io.on('connection', (socket) => {
-  // join the room named 'some room'
-  socket.join('player 1');
+  //just checking they are in fact, there
+  console.log('a user has connected spooky');
+
+  // treating both players as rooms cause idk
+  //if they choose the same group they both win cause friendship <3 (thats the work together option they only pass if they do over 50% of the page)
+  socket.on('pickPlayer1', player1 => {
+    // join player 1
+    socket.join(player1);
+    console.log('user is player 1');
+  });
   
-  // broadcast to all connected clients in the room
-  io.to('player 1').emit('you are player one and will draw in red');
+  //for player 2
+  socket.on('pickPlayer2', player2 => {
+    // join player 2
+    socket.join(player2);
+    console.log('user is player 2');
+  });
+
+  //looking for drawing actions from the user
+  socket.on('draw', (data) => {
+    //emit shows the drawing to everyone
+    socket.broadcast.emit('draw', data);
+  });
+  
+  // broadcast to all player 1
+  io.to('player1').emit('message', 'you will draw in red.  Get as much as you can in 10 seconds!');
+
+  // broadcast to all player 2
+  io.to('player2').emit('message', 'you will draw in blue.  Get as much as you can in 10 seconds!');
+
 
   // leave the room
-  socket.leave('player 1');
+  // socket.leave('player 1');
+
+  socket.on('disconnect', () => console.log('the user is gone oh noes'));
+
 });
+
 
 server.listen(1111, () => {
   console.log('server running at http://localhost:1111');
