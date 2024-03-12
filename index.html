@@ -1,85 +1,82 @@
 <!DOCTYPE html>
 <html>
-    <head>
-      <title>Draw as much as you can!</title>
-      <meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <!-- <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> -->
+  <head>
+    <title>Draw as much as you can!</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!-- <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> -->
 
-      <!-- adding in socket.io so that we can have multiple players -->
-      <script src="/socket.io/socket.io.js"></script>
-      <style>
-        #countdown {
-          font-size: 20px;
-          font-weight: bold;
-        }
+    <!-- adding in socket.io so that we can have multiple players -->
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      #countdown {
+        font-size: 20px;
+        font-weight: bold;
+      }
 
-        .outsideButton {
-          display: flex; 
-          justify-content: center; 
-          align-items: center; 
-          height: 100%; 
-        }
+      .outsideButton {
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100%; 
+      }
 
-        #startGameButton {
-          position: relative;
-          width: 300px;
-          height: 50px;
-          font-size: 40px;
-          align-items: center;
-        }
-      </style>
+      #startGameButton {
+        position: relative;
+        width: 300px;
+        height: 50px;
+        font-size: 40px;
+        align-items: center;
+      }
+    </style>
+  </head>
 
+  <body>
 
-    </head>
-    <body>
-      <!-- <div id="aframe-stuff" style="width: 100%; height: 400px;"> -->
-        <!-- <a-scene>
-           * fixed camera position * -->
-          <!-- <a-camera position="0 0 5" rotation="0 0 0"></a-camera> -->
-          <!-- <a-camera>
-            <a-cursor></a-cursor>
-          </a-camera> -->
-  
-          <!-- the start game button -->
-          <!-- <a-plane id="startGameButton" position="0 1 -3" rotation="0 0 0" width="1" height="0.5" color="#4CC3D9"></a-plane> -->
-          <!-- <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9" id="start-button">
-            <a-text value="Button" position="0 0 0.55"></a-text>  align="center" 
-          </a-box> 
-        
-        </a-scene> -->
-      <!-- </div> -->
+    <!-- music and sound effects -->
+    <audio id="gameOverSound">
+      <source src="/assets/gameoverarcade6435.mp3" type="audio/mp3">
+    </audio>
 
     <canvas id="drawingCanvas" width="800" height="600" style="border:1px solid black;"></canvas>
+    <button id="player1Button" position="0 0 0">Player 1</button>
+    <button id="player2Button" position="5 5 5">Player 2</button>
+    
+    <div id="titleOfGame"></div>
     <script>
+      document.getElementById("titleOfGame").innerText = "Try to cover as much of the canvas as possible.  You can win by picking either player 1 or player 2, or work together by just drawing in the default black colour!";
+
       document.addEventListener('DOMContentLoaded', () => {
         const canvas = document.getElementById('drawingCanvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
-
-        //colour:
-        ctx.strokeStyle = 'red';
-
+        let drawColour = "black"; //default colour when they start (doesnt count for anything)
+        
         const socket = io('http://localhost:1111');
 
-        
+        document.getElementById('player1Button').addEventListener('click', function() {
+          drawColour = [255, 0, 0, 255];
+          console.log("drawing colour is red");
+          socket.emit('pickPlayer1', 'player1');
+        });
 
-        // Emit drawing data to the server
+        document.getElementById('player2Button').addEventListener('click', function() {
+          drawColour = [0, 0, 255, 255];
+          console.log("drawing colour is blue");
+          socket.emit('pickPlayer2', 'player2');
+        });
+
+        // Emit drawing to the server
         function emitDraw(x, y, type) {
-          console.log("emitting the drawing");
-          socket.emit('draw', { x, y, type });
+          console.log("emitting the drawing with colour", drawColour);
+          socket.emit('draw', { x, y, type, color: drawColour });
         }
 
-        // Draw line based on data from server
-
-        // socket.on('draw', (data) => {
-        //   console.log("Received draw event on client", data);
-        //   // Respond to the server as a test
-        //   socket.emit('testResponse', { msg: "Client received draw event." });
-        //   socket.broadcast.emit('draw', data);
-        // });
         socket.on('draw', (data) => {
           console.log("drawing to the server");
-          const { x, y, type } = data;
+          const { x, y, type, color } = data;
+          //convert to css colour cause this is not working for some reason
+          const cssColourVersion = `rgba(${color[0]},${color[1]},${color[2]},${color[3] / 255})`;
+          ctx.strokeStyle = cssColourVersion;
           if (type === 'start') {
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -90,21 +87,21 @@
         });
 
         canvas.addEventListener('mousedown', (e) => {
-          console.log("should be drawing");
+          // console.log("should be drawing");
           drawing = true;
-          // Start drawing on the client's canvas
+          //start drawing on the canvas
           ctx.beginPath();
           ctx.moveTo(e.offsetX, e.offsetY);
-          // Emit drawing start action
+          //drawing start action
           emitDraw(e.offsetX, e.offsetY, 'start');
         });
 
         canvas.addEventListener('mousemove', (e) => {
           if (!drawing) return;
-          // Continue drawing on the client's canvas
+          //keep the line going
           ctx.lineTo(e.offsetX, e.offsetY);
           ctx.stroke();
-          // Emit drawing continue action
+          //emit that continuation to server
           emitDraw(e.offsetX, e.offsetY, 'continue');
         });
 
@@ -117,56 +114,40 @@
         });
       });
     </script>
-      
-      
-      <!-- <script>
-        //start game button javascript
-        // document.querySelector('#button').addEventListener('click', function () {
-        //   // <button onclick="startingCountdown(countdownAmount, displayed)">Start Game!</button>
-        //   startingCountdown(countdownAmount, displayed);
-        // });
-      </script> -->
-      <!-- <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form> -->
-      
-    <button onclick="pickPlayer1()" position="0 0 0">Player 1</button>
-    <button onclick="pickPlayer2()" position="5 5 5">Player 2</button>
 
-    <!-- <script>
-      function pickPlayer1() {
-        const player1 = document.getElementById('player1').value;
-        pickPlayer1(player1);
-      }
-
-      function pickPlayer2() {
-        const player2 = document.getElementById('player2').value;
-        pickPlayer2(player2);
-      }
-    </script> -->
-
+    <!-- figuring out how much of the canvas is covered -->
     <script>
-      const socket = io('http://localhost:1111');
+      function countColourPixels(canvas, theColour) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        let colourCount = 0;
 
-      //function for joining player 1
-      function pickPlayer1(player1) {
-        socket.emit('pickPlayer1', player1);
-      }
+        for (let i = 0; i < data.length; i += 4) {
+            // seperating the colour into rgba
+            if (data[i] === theColour[0] && 
+              data[i + 1] === theColour[1] && 
+              data[i + 2] === theColour[2] && 
+              data[i + 3] === theColour[3]) {
+              colourCount++;
+            }
+        }
 
-      //function for joining player 2
-      function pickPlayer2(player2) {
-        socket.emit('pickPlayer2', player2);
-      }
-      
+        return colourCount;
+    }
+
+    const canvas = document.getElementById('drawingCanvas');
+
     </script>
 
+    <!-- Timer stuff -->
     <div id="countdown" class="outsideButton"></div>
     <script>
-      // Timer stuff
       function startingCountdown() {
         console.log("we are in the countdown");
-        const countdownAmount = 60 * 1; //1 minute
+        const countdownAmount = 10 * 1; //1 minute
         const displayed = document.querySelector('#countdown');
         let timer = countdownAmount, minutes, seconds;
 
@@ -182,15 +163,37 @@
           if (--timer < 0) {
             clearInterval(interval);
 
+            alert("GAME OVER");
+
+            //play game over music
+            document.getElementById('gameOverSound').play();
+
+            const redPixels = countColourPixels(canvas, [255, 0, 0, 255]); // looking for red
+            const bluePixels = countColourPixels(canvas, [0, 0, 255, 255]); // looking for red
+            const generalPixels = redPixels + bluePixels; //total screen covered
+            const blackPixels = countColourPixels(canvas, [0, 0, 0, 255]);
+
+            if (redPixels > bluePixels) {
+              alert("PLAYER ONE WON!!!");
+            } else if (bluePixels > redPixels) {
+              alert("PLAYER TWO WON!!!");
+            } else if (blackPixels > (bluePixels + redPixels)) {
+              alert(`Great Teamwork!!! You got ${blackPixels} pixels covered!!`);
+            } else {
+              alert("It's a tie!!!");
+            }
+
             //STOP THE GAME AND GIVE THE PERCENTAGE OF THE SCREEN COVERED
           }
         }, 1000);
       }
 
     </script>
+
+    <!-- Start Game Button -->
     <div class="outsideButton">
       <button id="startGameButton" onclick="startingCountdown()">Start Game!</button>
     </div>
     
-    </body>
+  </body>
 </html>

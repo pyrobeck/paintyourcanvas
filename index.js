@@ -23,6 +23,7 @@ io.on('connection', (socket) => {
     // join player 1
     socket.join(player1);
     console.log('user is player 1');
+    console.log(socket.rooms);
   });
   
   //for player 2
@@ -30,6 +31,22 @@ io.on('connection', (socket) => {
     // join player 2
     socket.join(player2);
     console.log('user is player 2');
+    console.log(socket.rooms);
+  });
+
+  //getting the room
+  // if (socket.rooms.has('player1')) {
+  //   console.log('playerrrrr1');
+  // }
+
+  // if (socket.rooms.has('player2')) {
+  //   console.log('playerrrrr2');
+  // }
+
+
+  //get player number
+  socket.on('getPlayer', () => {
+    socket.emit('players', Array.from(socket.rooms));
   });
 
   // //looking for drawing actions from the user
@@ -37,8 +54,6 @@ io.on('connection', (socket) => {
     //emit shows the drawing to everyone
     socket.broadcast.emit('draw', data);
   });
-
-
   
   // broadcast to all player 1
   io.to('player1').emit('message', 'you will draw in red.  Get as much as you can in 1 minute!');
