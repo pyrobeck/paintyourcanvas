@@ -11,10 +11,26 @@ app.get('/', (req, res) => {
   res.sendFile(join(__dirname, 'index.html'));
 });
 
+
+//emit shows it to everyone
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg);
+  });
 });
 
-server.listen(8080, () => {
-  console.log('server running at http://localhost:8080');
+//letting the player choose which player they want to be (colour)
+io.on('connection', (socket) => {
+  // join the room named 'some room'
+  socket.join('player 1');
+  
+  // broadcast to all connected clients in the room
+  io.to('player 1').emit('you are player one and will draw in red');
+
+  // leave the room
+  socket.leave('player 1');
+});
+
+server.listen(1111, () => {
+  console.log('server running at http://localhost:1111');
 });
