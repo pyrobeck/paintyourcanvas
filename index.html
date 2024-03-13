@@ -54,15 +54,15 @@
         const socket = io();
 
         document.getElementById('player1Button').addEventListener('click', function() {
-          drawColour = [255, 0, 0, 255];
-          console.log("drawing colour is red");
           socket.emit('pickPlayer1', 'player1');
+          drawColour = 'red';
+          console.log("drawing colour is red");
         });
 
         document.getElementById('player2Button').addEventListener('click', function() {
-          drawColour = [0, 0, 255, 255];
-          console.log("drawing colour is blue");
           socket.emit('pickPlayer2', 'player2');
+          drawColour = 'blue';
+          console.log("drawing colour is blue");
         });
 
         // Emit drawing to the server
@@ -74,9 +74,7 @@
         socket.on('draw', (data) => {
           console.log("drawing to the server");
           const { x, y, type, color } = data;
-          //convert to css colour cause this is not working for some reason
-          const cssColourVersion = `rgba(${color[0]},${color[1]},${color[2]},${color[3] / 255})`;
-          ctx.strokeStyle = cssColourVersion;
+          ctx.strokeStyle = color;
           if (type === 'start') {
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -88,6 +86,7 @@
 
         canvas.addEventListener('mousedown', (e) => {
           // console.log("should be drawing");
+          ctx.strokeStyle = drawColour;
           drawing = true;
           //start drawing on the canvas
           ctx.beginPath();
@@ -101,6 +100,7 @@
           //keep the line going
           ctx.lineTo(e.offsetX, e.offsetY);
           ctx.stroke();
+          ctx.strokeStyle = drawColour;
           //emit that continuation to server
           emitDraw(e.offsetX, e.offsetY, 'continue');
         });
